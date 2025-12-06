@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas Feud - Print Assets</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f0f0f0;
+            overflow: auto;
+            height: auto;
+            position: relative;
+            display: block;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 20px;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .controls select,
+        .controls button {
+            padding: 10px 15px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        .controls button {
+            background: var(--bg-red);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .print-container {
+            max-width: 210mm;
+            /* A4 width */
+            margin: 80px auto 20px;
+            background: white;
+            padding: 20px;
+            min-height: 297mm;
+        }
+
+        /* Card Mode Styles */
+        .card-view .question-block {
+            border: 2px solid var(--bg-red);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+            background: white;
+        }
+
+        /* Answer Key Mode Styles */
+        .key-view .question-block {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            /* Reduced padding to fit 2 per page */
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+            height: 110mm;
+            /* Fixed height ~half page */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .q-header {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--bg-red);
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .answer-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dotted #eee;
+            font-size: 0.9rem;
+        }
+
+        .answer-row.hidden {
+            color: transparent;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+        }
+
+        @media print {
+            .controls {
+                display: none;
+            }
+
+            body {
+                background: white;
+                margin: 0;
+            }
+
+            .print-container {
+                margin: 0;
+                width: 100%;
+                max-width: none;
+                padding: 10mm;
+            }
+
+            /* Start new page for each question block if needed, but for Key View we want 2 per page */
+            .key-view .question-block {
+                height: 120mm;
+                /* Ensure it stays within half page limits */
+                margin-bottom: 5mm;
+                border: 2px solid var(--text-dark);
+                /* Solid border for cards */
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="controls">
+        <select id="lang-select">
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="it">Italiano</option>
+            <option value="pt">Português</option>
+        </select>
+        <select id="mode-select">
+            <option value="key">Answer Key (2/Page)</option>
+            <option value="cards">Question Cards</option>
+        </select>
+        <button onclick="window.print()">🖨️ Print / Save as PDF</button>
+    </div>
+
+    <div id="print-area" class="print-container key-view">
+        <!-- Content generated here -->
+    </div>
+
+    <!-- Load Questions -->
+    <script src="questions-en.js"></script>
+    <script src="questions-de.js"></script>
+    <script src="questions-fr.js"></script>
+    <script src="questions-es.js"></script>
+    <script src="questions-it.js"></script>
+    <script src="questions-pt.js"></script>
+
+    <script>
+        const printArea = document.getElementById('print-area');
+        const langSelect = document.getElementById('lang-select');
+        const modeSelect = document.getElementById('mode-select');
+
+        // Populate Question Data
+        const getQuestions = (lang) => {
+            const map = {
+                'en': window.QUESTIONS_EN,
+                'de': window.QUESTIONS_DE,
+                'fr': window.QUESTIONS_FR,
+                'es': window.QUESTIONS_ES,
+                'it': window.QUESTIONS_IT,
+                'pt': window.QUESTIONS_PT
+            };
+            return map[lang] || window.QUESTIONS_EN;
+        };
+
+        function render() {
+            const lang = langSelect.value;
+            const mode = modeSelect.value;
+            const questions = getQuestions(lang);
+
+            printArea.className = `print-container ${mode}-view`;
+            printArea.innerHTML = '';
+
+            questions.forEach((q, index) => {
+                const block = document.createElement('div');
+                block.className = 'question-block';
+
+                let html = `
+                    <div class="q-header">
+                        #${index + 1}: ${q.question}
+                    </div>
+                    <div class="answers-list">
+                `;
+
+                q.answers.forEach(a => {
+                    html += `
+                        <div class="answer-row">
+                            <span class="text">${a.text}</span>
+                            <span class="points">${a.points}</span>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                block.innerHTML = html;
+                printArea.appendChild(block);
+            });
+        }
+
+        langSelect.addEventListener('change', render);
+        modeSelect.addEventListener('change', render);
+
+        // Init
+        render();
+    </script>
+</body>
+
+</html>
